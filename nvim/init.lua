@@ -1,43 +1,24 @@
-require("config.plugins")
-require("import")
-require("config.impatient")
-require("config.options")
-require("config.notify")
-require("config.keymaps")
-require("config.colorschemes")
-require("config.better-escape")
-require("config.treesitter")
-require("config.autopairs")
-require("config.copilot")
-require("config.cmp")
-require("config.lsp")
-require("config.neo-tree")
-require("config.which-key")
-require("config.gitsigns")
-require("config.lualine")
-require("config.bufferline")
-require("config.harpoon")
-require("config.telescope")
-require("config.symbols-outline")
-require("config.alpha")
-require("config.lastplace")
-require("config.dressing")
-require("config.comment")
-require("config.indent_blankline")
-require("config.tabout")
-require("config.scrollbar")
-require("config.hlslens")
-require("config.hop")
-require("config.surround")
-require("config.toggleterm")
-require("config.cursorline")
-require("config.color-highlight")
-require("config.tmux")
-require("config.git-conflict")
+local impatient_ok, impatient = pcall(require, "impatient")
+if impatient_ok then impatient.enable_profile() end
 
--- make sure prettier is loaded
--- master + f to invoke telescope
-vim.api.nvim_set_keymap("n", "<leader>f", ":Telescope find_files<cr>", { noremap = true, silent = true })
+for _, source in ipairs {
+  "core.utils",
+  "core.options",
+  "core.bootstrap",
+  "core.diagnostics",
+  "core.autocmds",
+  "core.mappings",
+  "configs.which-key-register",
+} do
+  local status_ok, fault = pcall(require, source)
+  if not status_ok then vim.api.nvim_err_writeln("Failed to load " .. source .. "\n\n" .. fault) end
+end
 
--- ctrl +  s save file
-vim.api.nvim_set_keymap("n", "<C-s>", ":w<CR>", { noremap = true, silent = true })
+astronvim.conditional_func(astronvim.user_plugin_opts("polish", nil, false))
+
+if vim.fn.has "nvim-0.8" ~= 1 or vim.version().prerelease then
+  vim.schedule(function() astronvim.notify("Unsupported Neovim Version! Please check the requirements", "error") end)
+end
+
+-- use tab for completion of compilot
+vim.g.copilot_assume_mapped = true
