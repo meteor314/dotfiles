@@ -34,7 +34,7 @@ local astro_plugins = {
 
   -- Notification Enhancer
   ["rcarriga/nvim-notify"] = {
-    opt = true,
+    module = "notify",
     setup = function() astronvim.load_plugin_with_func("nvim-notify", vim, "notify") end,
     config = function() require "configs.notify" end,
   },
@@ -67,7 +67,8 @@ local astro_plugins = {
   },
 
   -- Bufferline
-  ["akinsho/bufferline.nvim"] = {
+  ["akinsho/bufferline.nvim"] = { -- TODO v3: remove this plugin
+    disable = vim.g.heirline_bufferline,
     module = "bufferline",
     event = "UIEnter",
     config = function() require "configs.bufferline" end,
@@ -275,7 +276,7 @@ local astro_plugins = {
   -- Terminal
   ["akinsho/toggleterm.nvim"] = {
     module = "toggleterm",
-    setup = function() astronvim.lazy_load_commands("toggleterm.nvim", "ToggleTerm") end,
+    setup = function() astronvim.lazy_load_commands("toggleterm.nvim", { "ToggleTerm", "TermExec" }) end,
     config = function() require "configs.toggleterm" end,
   },
 
@@ -317,7 +318,10 @@ local astro_plugins = {
 if astronvim.updater.snapshot then
   for plugin, options in pairs(astro_plugins) do
     local pin = astronvim.updater.snapshot[plugin:match "/([^/]*)$"]
-    options.commit = pin and pin.commit or options.commit
+    if pin and pin.commit then
+      options.commit = pin.commit
+      options.tag = nil
+    end
   end
 end
 

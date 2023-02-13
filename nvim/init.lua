@@ -23,10 +23,11 @@ end
 -- use tab for completion of compilot
 vim.g.copilot_assume_mapped = true
 
-
 -- space + t to execute command Copilot disable
 vim.api.nvim_set_keymap("n", "<space>t", ":Copilot disable<CR>", { noremap = true, silent = true })
 
-
 -- ctrl + t  to toogle term
 vim.api.nvim_set_keymap("n", "<C-t>", ":ToggleTerm<CR>", { noremap = true, silent = true })
+
+-- tab to switch buffer
+vim.api.nvim_set_keymap("n", "<TAB>", ":bnext<CR>", { noremap = true, silent = true })

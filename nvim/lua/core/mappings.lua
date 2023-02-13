@@ -1,8 +1,6 @@
 local is_available = astronvim.is_available
 
-local maps = { i = {}, n = {}, v = {}, t = {}, [""] = {} }
-
-maps[""]["<Space>"] = "<Nop>"
+local maps = { i = {}, n = {}, v = {}, t = {} }
 
 -- Normal --
 -- Standard Operations
@@ -14,6 +12,8 @@ maps.n["gx"] = { function() astronvim.system_open() end, desc = "Open the file u
 maps.n["<C-s>"] = { "<cmd>w!<cr>", desc = "Force write" }
 maps.n["<C-q>"] = { "<cmd>q!<cr>", desc = "Force quit" }
 maps.n["Q"] = "<Nop>"
+maps.n["|"] = { "<cmd>vsplit<cr>", desc = "Vertical Split" }
+maps.n["\\"] = { "<cmd>split<cr>", desc = "Horizontal Split" }
 
 -- Packer
 maps.n["<leader>pc"] = { "<cmd>PackerCompile<cr>", desc = "Packer Compile" }
@@ -33,27 +33,73 @@ if is_available "alpha-nvim" then
   maps.n["<leader>d"] = { function() require("alpha").start() end, desc = "Alpha Dashboard" }
 end
 
--- Bufdelete
-if is_available "bufdelete.nvim" then
-  maps.n["<leader>c"] = { function() require("bufdelete").bufdelete(0, false) end, desc = "Close buffer" }
-  maps.n["<leader>C"] = { function() require("bufdelete").bufdelete(0, true) end, desc = "Force close buffer" }
-else
-  maps.n["<leader>c"] = { "<cmd>bdelete<cr>", desc = "Close buffer" }
-  maps.n["<leader>C"] = { "<cmd>bdelete!<cr>", desc = "Force close buffer" }
+if vim.g.heirline_bufferline then
+  -- Manage Buffers
+  maps.n["<leader>c"] = { function() astronvim.close_buf(0) end, desc = "Close buffer" }
+  maps.n["<leader>C"] = { function() astronvim.close_buf(0, true) end, desc = "Force close buffer" }
+  maps.n["<S-l>"] = { function() astronvim.nav_buf(vim.v.count > 0 and vim.v.count or 1) end, desc = "Next buffer" }
+  maps.n["<S-h>"] =
+    { function() astronvim.nav_buf(-(vim.v.count > 0 and vim.v.count or 1)) end, desc = "Previous buffer" }
+  maps.n[">b"] =
+    { function() astronvim.move_buf(vim.v.count > 0 and vim.v.count or 1) end, desc = "Move buffer tab right" }
+  maps.n["<b"] =
+    { function() astronvim.move_buf(-(vim.v.count > 0 and vim.v.count or 1)) end, desc = "Move buffer tab left" }
+
+  maps.n["<leader>bb"] = {
+    function()
+      astronvim.status.heirline.buffer_picker(function(bufnr) vim.api.nvim_win_set_buf(0, bufnr) end)
+    end,
+    desc = "Select buffer from tabline",
+  }
+  maps.n["<leader>bd"] = {
+    function()
+      astronvim.status.heirline.buffer_picker(function(bufnr) astronvim.close_buf(bufnr) end)
+    end,
+    desc = "Delete buffer from tabline",
+  }
+  maps.n["<leader>b\\"] = {
+    function()
+      astronvim.status.heirline.buffer_picker(function(bufnr)
+        vim.cmd.split()
+        vim.api.nvim_win_set_buf(0, bufnr)
+      end)
+    end,
+    desc = "Horizontal split buffer from tabline",
+  }
+  maps.n["<leader>b|"] = {
+    function()
+      astronvim.status.heirline.buffer_picker(function(bufnr)
+        vim.cmd.vsplit()
+        vim.api.nvim_win_set_buf(0, bufnr)
+      end)
+    end,
+    desc = "Vertical split buffer from tabline",
+  }
+else -- TODO v3: remove this else block
+  -- Bufdelete
+  if is_available "bufdelete.nvim" then
+    maps.n["<leader>c"] = { function() require("bufdelete").bufdelete(0, false) end, desc = "Close buffer" }
+    maps.n["<leader>C"] = { function() require("bufdelete").bufdelete(0, true) end, desc = "Force close buffer" }
+  else
+    maps.n["<leader>c"] = { "<cmd>bdelete<cr>", desc = "Close buffer" }
+    maps.n["<leader>C"] = { "<cmd>bdelete!<cr>", desc = "Force close buffer" }
+  end
+
+  -- Navigate buffers
+  if is_available "bufferline.nvim" then
+    maps.n["<S-l>"] = { "<cmd>BufferLineCycleNext<cr>", desc = "Next buffer tab" }
+    maps.n["<S-h>"] = { "<cmd>BufferLineCyclePrev<cr>", desc = "Previous buffer tab" }
+    maps.n[">b"] = { "<cmd>BufferLineMoveNext<cr>", desc = "Move buffer tab right" }
+    maps.n["<b"] = { "<cmd>BufferLineMovePrev<cr>", desc = "Move buffer tab left" }
+  else
+    maps.n["<S-l>"] = { "<cmd>bnext<cr>", desc = "Next buffer" }
+    maps.n["<S-h>"] = { "<cmd>bprevious<cr>", desc = "Previous buffer" }
+  end
 end
 
--- Navigate buffers
-if is_available "bufferline.nvim" then
-  -- use tab to navigate buffers
-  maps.n["<Tab>"] = { "<cmd>BufferLineCycleNext<cr>", desc = "Next buffer" }
-  maps.n["<S-l>"] = { "<cmd>BufferLineCycleNext<cr>", desc = "Next buffer tab" }
-  maps.n["<S-h>"] = { "<cmd>BufferLineCyclePrev<cr>", desc = "Previous buffer tab" }
-  maps.n[">b"] = { "<cmd>BufferLineMoveNext<cr>", desc = "Move buffer tab right" }
-  maps.n["<b"] = { "<cmd>BufferLineMovePrev<cr>", desc = "Move buffer tab left" }
-else
-  maps.n["<S-l>"] = { "<cmd>bnext<cr>", desc = "Next buffer" }
-  maps.n["<S-h>"] = { "<cmd>bprevious<cr>", desc = "Previous buffer" }
-end
+-- Navigate tabs
+maps.n["]t"] = { function() vim.cmd.tabnext() end, desc = "Next tab" }
+maps.n["[t"] = { function() vim.cmd.tabprevious() end, desc = "Previous tab" }
 
 -- Comment
 if is_available "Comment.nvim" then
@@ -90,7 +136,7 @@ if is_available "neovim-session-manager" then
   maps.n["<leader>Sd"] = { "<cmd>SessionManager! delete_session<cr>", desc = "Delete session" }
   maps.n["<leader>Sf"] = { "<cmd>SessionManager! load_session<cr>", desc = "Search sessions" }
   maps.n["<leader>S."] =
-  { "<cmd>SessionManager! load_current_dir_session<cr>", desc = "Load current directory session" }
+    { "<cmd>SessionManager! load_current_dir_session<cr>", desc = "Load current directory session" }
 end
 
 -- Package Manager
@@ -98,9 +144,6 @@ if is_available "mason.nvim" then
   maps.n["<leader>pI"] = { "<cmd>Mason<cr>", desc = "Mason Installer" }
   maps.n["<leader>pU"] = { "<cmd>MasonUpdateAll<cr>", desc = "Mason Update" }
 end
-
--- LSP Installer
-if is_available "mason-lspconfig.nvim" then maps.n["<leader>li"] = { "<cmd>LspInfo<cr>", desc = "LSP information" } end
 
 -- Smart Splits
 if is_available "smart-splits.nvim" then
@@ -155,7 +198,7 @@ if is_available "telescope.nvim" then
   maps.n["<leader>fm"] = { function() require("telescope.builtin").marks() end, desc = "Search marks" }
   maps.n["<leader>fo"] = { function() require("telescope.builtin").oldfiles() end, desc = "Search history" }
   maps.n["<leader>fc"] =
-  { function() require("telescope.builtin").grep_string() end, desc = "Search for word under cursor" }
+    { function() require("telescope.builtin").grep_string() end, desc = "Search for word under cursor" }
   maps.n["<leader>sb"] = { function() require("telescope.builtin").git_branches() end, desc = "Git branches" }
   maps.n["<leader>sh"] = { function() require("telescope.builtin").help_tags() end, desc = "Search help" }
   maps.n["<leader>sm"] = { function() require("telescope.builtin").man_pages() end, desc = "Search man" }
@@ -164,7 +207,7 @@ if is_available "telescope.nvim" then
   maps.n["<leader>sc"] = { function() require("telescope.builtin").commands() end, desc = "Search commands" }
   if astronvim.is_available "nvim-notify" then
     maps.n["<leader>sn"] =
-    { function() require("telescope").extensions.notify.notify() end, desc = "Search notifications" }
+      { function() require("telescope").extensions.notify.notify() end, desc = "Search notifications" }
   end
   maps.n["<leader>ls"] = {
     function()
